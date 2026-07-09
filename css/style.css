@@ -67,6 +67,15 @@ body.walking #stage canvas { cursor: none; }
   opacity: 0;
 }
 .hs-label.on { opacity: 1; }
+#switchVersion {
+  position: absolute; left: 1.6rem; top: 1.5rem; pointer-events: auto;
+  color: #c9a86f; font-size: .74rem; letter-spacing: .18em; text-transform: uppercase;
+  text-decoration: none; border-bottom: 1px solid rgba(200,165,100,.4);
+  padding-bottom: .2rem; transition: color .3s;
+  animation: fadeDown 2s ease 1.2s both;
+}
+#switchVersion:hover { color: #ffe4ad; }
+#landing.entering #switchVersion { opacity: 0 !important; transition: opacity .6s; }
 .hs-label:hover {
   background: rgba(120,66,18,.8); color: #fff0cf;
   box-shadow: 0 0 26px rgba(255,190,100,.35);

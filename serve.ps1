@@ -48,7 +48,7 @@ Write-Host ""
 while ($listener.IsListening) {
     try { $ctx = $listener.GetContext() } catch { break }
     $path = [Uri]::UnescapeDataString($ctx.Request.Url.AbsolutePath)
-    if ($path -eq "/") { $path = "/index.html" }
+    if ($path.EndsWith("/")) { $path = $path + "index.html" }
     $file = Join-Path $root ($path -replace "/", "\").TrimStart("\")
     $resp = $ctx.Response
     if ((Test-Path $file -PathType Leaf) -and ((Resolve-Path $file).Path.StartsWith($root))) {

@@ -1,7 +1,15 @@
 # The Gallery of Moments
 
-A first-person, walk-through 3D photo gallery — a Kerala-style museum housing 122
-photographs shot across India, organized into 8 themed halls.
+A first-person, walk-through 3D photo gallery housing 122 photographs shot across
+India, organized into 8 themed halls. It ships as **two complete experiences**
+sharing the same photos and controls, with switch links on both landing pages:
+
+- **The Kerala museum** (`/`) — an antique tharavad at dusk: teak doors, brass
+  lamps, terracotta floors, a nadumuttam skylight.
+- **The Modern Exhibition** (`/modern/`) — a contemporary white-cube show:
+  glass lobby, luminous panel ceilings, track lighting, and a differently
+  styled gallery for every theme (white cube, dark walnut, freestanding panel
+  maze, industrial, greige, oak, backlit lightboxes, neon-ink).
 
 ## Run it locally
 

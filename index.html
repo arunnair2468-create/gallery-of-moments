@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Gallery of Moments — Photographs from across India</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>🏛️</text></svg>">
+</head>
+<body>
+
+<!-- the one canvas: exterior dusk scene + gallery interior -->
+<div id="stage"></div>
+
+<!-- boot loader -->
+<div id="boot">
+  <div class="boot-lamp"></div>
+  <p>lighting the lamps…</p>
+</div>
+
+<!-- ══════════ LANDING overlay (text + hotspot labels over the 3D exterior) ══════════ -->
+<div id="landing">
+  <div id="lText">
+    <h1>Welcome to my collection of<br><em>moments I have captured</em></h1>
+    <p class="l-sub">a walk-through gallery of photographs from across India</p>
+  </div>
+  <p id="lHint">click the door to step inside &nbsp;·&nbsp; the windows are worth a peek</p>
+  <button class="hs-label" id="hsDoor">Step Inside</button>
+  <button class="hs-label" id="hsAbout">About Me</button>
+  <button class="hs-label" id="hsHello">Say Hello</button>
+</div>
+
+<!-- ══════════ GALLERY HUD ══════════ -->
+<div id="hud">
+  <div id="hudRoom"><span id="hudRoomName"></span><span id="hudRoomTag"></span></div>
+  <div id="hudTop">
+    <button class="hud-btn" id="btnMap" title="Gallery map">Map</button>
+    <button class="hud-btn" id="btnAbout2" title="About me">About</button>
+    <button class="hud-btn" id="btnConnect2" title="Contact">Hello</button>
+    <button class="hud-btn" id="btnExit" title="Back to the entrance">Exit</button>
+  </div>
+  <div id="hudHint">move the mouse to look &nbsp;·&nbsp; scroll to walk &nbsp;·&nbsp; click a photo to view it &nbsp;·&nbsp; click a door to change rooms</div>
+  <div id="loadRing"><div></div><span>hanging the frames…</span></div>
+  <div id="joy"><div id="joyKnob"></div></div>
+</div>
+<div id="cursor"></div>
+<div id="cursorLabel"></div>
+
+<!-- map overlay -->
+<div id="mapOverlay" class="overlay">
+  <div class="overlay-inner">
+    <h2>The Halls</h2>
+    <div id="mapGrid"></div>
+    <button class="overlay-close" data-close="mapOverlay">✕</button>
+  </div>
+</div>
+
+<!-- about modal -->
+<div id="aboutOverlay" class="overlay">
+  <div class="overlay-inner wood-frame">
+    <h2>About the Photographer</h2>
+    <div id="aboutText"></div>
+    <button class="overlay-close" data-close="aboutOverlay">✕</button>
+  </div>
+</div>
+
+<!-- connect modal -->
+<div id="connectOverlay" class="overlay">
+  <div class="overlay-inner wood-frame">
+    <h2>Say Hello</h2>
+    <p class="connect-lead">If any frame in these halls made you pause, I would love to hear about it.</p>
+    <div id="socialLinks"></div>
+    <button class="overlay-close" data-close="connectOverlay">✕</button>
+  </div>
+</div>
+
+<!-- lightbox -->
+<div id="lightbox">
+  <img id="lbImg" alt="">
+  <div id="lbBar">
+    <div><h3 id="lbTitle"></h3><p id="lbCap"></p></div>
+    <span id="lbRoom"></span>
+  </div>
+  <button id="lbClose">✕</button>
+</div>
+
+<!-- cinematic layers -->
+<div id="vignette"></div>
+<div id="grain"></div>
+<div id="fade"></div>
+
+<script src="js/three.min.js"></script>
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

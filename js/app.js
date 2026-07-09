@@ -762,15 +762,19 @@ function buildExterior() {
   /* ---- the great door ---- */
   const doorG = new THREE.Group();
   doorG.position.set(0, 0.5, 0.05);
-  const reveal = box(2.3, 3.0, 0.5, MAT.wood);
-  reveal.position.set(0, 1.5, -0.2);
-  /* through the opened doors you glimpse the entrance hall itself */
+  /* open casing around the doorway (NOT a solid block — the hall shows through) */
+  const revL = box(0.16, 3.0, 0.5, MAT.wood); revL.position.set(-1.07, 1.5, -0.2);
+  const revR = box(0.16, 3.0, 0.5, MAT.wood); revR.position.set(1.07, 1.5, -0.2);
+  const revT = box(2.3, 0.16, 0.5, MAT.wood); revT.position.set(0, 2.92, -0.2);
+  doorG.add(revL, revR, revT);
+  /* through the opened doors you see the entrance hall itself, and fly into it */
   const hallMat = new THREE.MeshBasicMaterial({ color: 0x1c130c, toneMapped: false });
   hallMat.userData.bright = true;   /* the hall should read clearly, not dimly */
   (portalUsers.hub = portalUsers.hub || []).push(hallMat);
-  const revealDark = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 2.9), hallMat);
-  revealDark.position.set(0, 1.45, -0.42);
-  doorG.add(revealDark);
+  const hallView = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 2.9), hallMat);
+  hallView.position.set(0, 1.45, -0.38);
+  hallView.userData.enter = true;   /* tapping the view walks you in */
+  doorG.add(hallView);
   const doorMat = MAT.wood;
   function doorPanel(side) {
     const pivot = new THREE.Group();
@@ -803,7 +807,7 @@ function buildExterior() {
     return pivot;
   }
   const dl = doorPanel(1), dr = doorPanel(-1);
-  doorG.add(reveal, dl, dr);
+  doorG.add(dl, dr);
   EXT.doors.left = dl; EXT.doors.right = dr;
   H.add(doorG);
   /* threshold glow light */
@@ -1458,6 +1462,7 @@ function addEvents() {
 
   if (COARSE_ONLY) {
     $("#hudHint").innerHTML = "joystick: push up to walk, sideways to turn &nbsp;·&nbsp; drag the view to look &nbsp;·&nbsp; tap photos &amp; doors";
+    $("#lHint").innerHTML = "joystick: look around &amp; step closer &nbsp;·&nbsp; tap the door to enter, the windows to peek";
   }
 }
 
@@ -1622,11 +1627,14 @@ function loop(now) {
 
   if (mode === "ext" && !inputLocked && !uiOpen()) {
     /* limited look-around + scroll dolly outside */
-    if (move.pointerIn) {
+    if (HAS_FINE && move.pointerIn && !move.joyX && !move.joyY) {
       const dx = move.mouseX - 0.5, dy = move.mouseY - 0.5;
       move.yaw += ((-dx * 0.42) - move.yaw) * Math.min(1, dt * 3.2);
       move.targetPitch = -dy * 0.22 + 0.02;
     }
+    /* joystick outside: left/right looks across the facade, up/down walks nearer/farther */
+    if (move.joyX) move.yaw = clamp(move.yaw - move.joyX * Math.abs(move.joyX) * dt * 1.3, -0.62, 0.62);
+    if (move.joyY) move.extDolly = clamp(move.extDolly + move.joyY * dt * 4.2, 5.6, 13.5);
     move.pitch += (move.targetPitch - move.pitch) * Math.min(1, dt * 3.2);
     const dz = move.extDolly - camera.position.z;
     camera.position.z += dz * Math.min(1, dt * 3);

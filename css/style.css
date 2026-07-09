@@ -136,7 +136,7 @@ body.nocursor #cursor { display: none !important; }
 
 /* virtual joystick — walk with up/down, turn with left/right */
 #joy {
-  display: none; position: absolute; right: 1.5rem; bottom: 2.2rem;
+  display: none; position: fixed; right: 1.5rem; bottom: 2.2rem; z-index: 35;
   width: 112px; height: 112px; border-radius: 50%;
   background: radial-gradient(circle at 50% 42%, rgba(34,18,9,.55), rgba(12,6,3,.75));
   border: 1px solid rgba(210,165,90,.55);

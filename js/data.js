@@ -14,11 +14,8 @@ const SITE = {
     "Everything here was photographed across India — through a DSLR on good days and a phone on honest ones.",
     "Thank you for walking through."
   ],
-  // EDIT ME — put your real profile URLs here
   socials: [
-    { name: "Instagram", url: "https://instagram.com/your_handle", icon: "◈" },
-    { name: "X / Twitter", url: "https://x.com/your_handle", icon: "✕" },
-    { name: "YouTube", url: "https://youtube.com/@your_handle", icon: "▶" },
+    { name: "Instagram — @avn.clicks", url: "https://instagram.com/avn.clicks", icon: "◈" },
     { name: "Email", url: "mailto:mpupmpupmpup@gmail.com", icon: "✉" }
   ]
 };

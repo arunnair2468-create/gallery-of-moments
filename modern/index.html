@@ -9,6 +9,8 @@
 </head>
 <body>
 
+<div id="brightBanner">☀&nbsp; increase your screen brightness for the optimum experience<button id="bbClose" aria-label="dismiss">&#10005;</button></div>
+
 <!-- the one canvas: lobby + galleries -->
 <div id="stage"></div>
 
@@ -87,6 +89,13 @@
 <div id="grain"></div>
 <div id="fade"></div>
 
+<script>
+  (function () {
+    var b = document.getElementById("brightBanner");
+    document.getElementById("bbClose").addEventListener("click", function () { b.classList.add("off"); });
+    setTimeout(function () { b.classList.add("off"); }, 9000);
+  })();
+</script>
 <script src="../js/three.min.js"></script>
 <script src="../js/data.js"></script>
 <script src="app.js"></script>

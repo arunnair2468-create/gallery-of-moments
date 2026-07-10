@@ -8,6 +8,24 @@ body {
 }
 button { font-family: inherit; cursor: pointer; }
 
+/* brightness advice banner */
+#brightBanner {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 110;
+  display: flex; align-items: center; justify-content: center;
+  padding: .6rem 3rem; text-align: center;
+  background: rgba(18,9,4,.88); color: #e8cf9f;
+  font-size: .74rem; letter-spacing: .22em; text-transform: uppercase;
+  border-bottom: 1px solid rgba(210,165,90,.45);
+  backdrop-filter: blur(6px);
+  transition: transform .6s ease, opacity .6s ease;
+}
+#brightBanner.off { transform: translateY(-110%); opacity: 0; pointer-events: none; }
+#brightBanner button {
+  position: absolute; right: .9rem; top: 50%; transform: translateY(-50%);
+  background: none; border: none; color: #b98d55; font-size: .85rem; cursor: pointer;
+}
+#brightBanner button:hover { color: #ffe0a0; }
+
 #stage { position: fixed; inset: 0; z-index: 1; }
 #stage canvas { display: block; }
 body.walking #stage canvas { cursor: none; }

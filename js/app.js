@@ -1379,10 +1379,10 @@ function addEvents() {
     if (inputLocked || uiOpen()) return;
     const d = e.deltaMode === 1 ? e.deltaY * 24 : e.deltaY;
     if (mode === "int") {
-      move.speed += d * 0.0042;
+      move.speed += -d * 0.0042;   /* scroll up = walk forward */
       move.speed = clamp(move.speed, -4.6, 4.6);
     } else {
-      move.extDolly = clamp(move.extDolly + d * 0.008, 5.6, 13.5);
+      move.extDolly = clamp(move.extDolly + d * 0.008, 5.6, 13.5);   /* scroll up = step closer */
     }
   }, { passive: true });
 

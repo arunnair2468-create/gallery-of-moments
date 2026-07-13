@@ -25,6 +25,11 @@ const HAS_FINE = matchMedia("(pointer:fine)").matches;
 const COARSE_ONLY = !HAS_FINE && matchMedia("(pointer:coarse)").matches;
 if (COARSE_ONLY) document.body.classList.add("coarse");
 
+/* IST decides what the skylights show: sun by day, stars by night */
+const IST_HOUR = new Date(Date.now() + (new Date().getTimezoneOffset() + 330) * 60000).getHours();
+const IS_DAY = IST_HOUR >= 6 && IST_HOUR < 18;
+const RAY = IS_DAY ? "255,222,150" : "150,180,255";   /* sunbeam vs moonbeam */
+
 /* ───────────────────────────── tween engine ─────────────────────────────── */
 const TWEENS = [];
 const easeIO = (t) => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
@@ -328,30 +333,127 @@ function buildTextures() {
     x.beginPath(); x.arc(130, 150, 7, 0, 7); x.fill();
     TEX.palm = tex(c, null, true);
   }
-  /* ---- palm frond (potted plants) ---- */
-  {
+  /* ---- five leaf types, drawn individually for realistic plants ---- */
+  const leafCanvas = (draw) => {
     const c = mkCanvas(256, 256), x = c.getContext("2d");
+    draw(x);
+    return tex(c, null, true);
+  };
+  /* monstera: big lobed blade with edge slits and pale veins */
+  TEX.leafMonstera = leafCanvas((x) => {
+    const g = x.createLinearGradient(0, 256, 0, 20);
+    g.addColorStop(0, "#16391b"); g.addColorStop(1, "#2f7a38");
+    x.fillStyle = g;
+    x.beginPath();
+    x.moveTo(128, 250);
+    x.bezierCurveTo(10, 210, 6, 90, 96, 34);
+    x.bezierCurveTo(112, 24, 144, 24, 160, 34);
+    x.bezierCurveTo(250, 90, 246, 210, 128, 250);
+    x.closePath(); x.fill();
+    x.globalCompositeOperation = "destination-out";
     x.lineCap = "round";
-    for (let i = 0; i < 13; i++) {
-      const a = -Math.PI / 2 + (i / 12 - 0.5) * 2.6;
-      const L = 100 + Math.random() * 60;
-      const dx = Math.cos(a), dy = Math.sin(a);
-      const g0 = Math.random() * 60;
-      x.strokeStyle = `rgb(${26 + g0 * 0.5 | 0},${72 + g0 | 0},${30 + g0 * 0.5 | 0})`;
-      x.lineWidth = 2;
-      x.beginPath(); x.moveTo(128, 246); x.lineTo(128 + dx * L, 246 + dy * L); x.stroke();
-      x.lineWidth = 1.4;
-      for (let f = 0.25; f < 1; f += 0.06) {
-        const px2 = 128 + dx * L * f, py2 = 246 + dy * L * f;
-        const ll = 15 * (1.15 - f);
-        x.beginPath();
-        x.moveTo(px2, py2); x.lineTo(px2 - dy * ll + dx * 6, py2 + dx * ll + dy * 6);
-        x.moveTo(px2, py2); x.lineTo(px2 + dy * ll + dx * 6, py2 - dx * ll + dy * 6);
-        x.stroke();
-      }
+    for (let s = 0; s < 5; s++) {
+      const y = 70 + s * 36;
+      x.lineWidth = 10 + s * 1.5;
+      x.beginPath(); x.moveTo(4, y); x.lineTo(96 - s * 6, y + 26); x.stroke();
+      x.beginPath(); x.moveTo(252, y); x.lineTo(160 + s * 6, y + 26); x.stroke();
     }
-    TEX.frond = tex(c, null, true);
-  }
+    x.globalCompositeOperation = "source-over";
+    x.strokeStyle = "rgba(190,225,180,.45)"; x.lineWidth = 3;
+    x.beginPath(); x.moveTo(128, 248); x.lineTo(128, 34); x.stroke();
+    x.lineWidth = 1.3;
+    for (let y = 60; y < 240; y += 24) {
+      x.beginPath(); x.moveTo(128, y); x.lineTo(58, y - 22);
+      x.moveTo(128, y); x.lineTo(198, y - 22); x.stroke();
+    }
+  });
+  /* banana: tall paddle leaf, bright rib, wind-torn edges */
+  TEX.leafBanana = leafCanvas((x) => {
+    const g = x.createLinearGradient(0, 256, 0, 0);
+    g.addColorStop(0, "#1d5a24"); g.addColorStop(1, "#54a341");
+    x.fillStyle = g;
+    x.beginPath();
+    x.moveTo(128, 252);
+    x.bezierCurveTo(58, 220, 46, 120, 92, 22);
+    x.quadraticCurveTo(128, 4, 164, 22);
+    x.bezierCurveTo(210, 120, 198, 220, 128, 252);
+    x.closePath(); x.fill();
+    x.strokeStyle = "rgba(228,242,180,.6)"; x.lineWidth = 5;
+    x.beginPath(); x.moveTo(128, 250); x.lineTo(128, 16); x.stroke();
+    x.strokeStyle = "rgba(215,235,170,.26)"; x.lineWidth = 1.6;
+    for (let y = 34; y < 240; y += 12) {
+      x.beginPath(); x.moveTo(128, y); x.lineTo(60, y + 26);
+      x.moveTo(128, y); x.lineTo(196, y + 26); x.stroke();
+    }
+    x.globalCompositeOperation = "destination-out";
+    x.lineCap = "round"; x.lineWidth = 4.5;
+    [70, 132, 194].forEach((y) => {
+      x.beginPath(); x.moveTo(50, y); x.lineTo(118, y + 24); x.stroke();
+      x.beginPath(); x.moveTo(206, y + 30); x.lineTo(140, y + 52); x.stroke();
+    });
+    x.globalCompositeOperation = "source-over";
+  });
+  /* areca palm: one arching frond of fine leaflets */
+  TEX.leafPalm = leafCanvas((x) => {
+    x.lineCap = "round";
+    x.strokeStyle = "#2e6b2e"; x.lineWidth = 4;
+    x.beginPath(); x.moveTo(128, 252); x.quadraticCurveTo(132, 130, 120, 14); x.stroke();
+    for (let f = 0.06; f < 1; f += 0.042) {
+      const y = 252 - f * 238;
+      const px2 = 128 + Math.sin(f * 3) * 4;
+      const ll = 54 * (1 - Math.abs(f - 0.45) * 1.35);
+      const gg = 60 + Math.random() * 66;
+      x.strokeStyle = `rgb(${gg * 0.4 | 0},${gg + 48 | 0},${gg * 0.42 | 0})`;
+      x.lineWidth = 2.6;
+      x.beginPath();
+      x.moveTo(px2, y); x.quadraticCurveTo(px2 - ll * 0.6, y + 4, px2 - ll, y + 16 + f * 6);
+      x.moveTo(px2, y); x.quadraticCurveTo(px2 + ll * 0.6, y + 4, px2 + ll, y + 16 + f * 6);
+      x.stroke();
+    }
+  });
+  /* rubber fig: rounded glossy blade */
+  TEX.leafFig = leafCanvas((x) => {
+    const g = x.createRadialGradient(110, 110, 20, 128, 130, 150);
+    g.addColorStop(0, "#3f8f46"); g.addColorStop(0.7, "#1e5c26"); g.addColorStop(1, "#123c18");
+    x.fillStyle = g;
+    x.beginPath();
+    x.moveTo(128, 250);
+    x.bezierCurveTo(40, 214, 30, 100, 118, 18);
+    x.quadraticCurveTo(128, 12, 138, 18);
+    x.bezierCurveTo(226, 100, 216, 214, 128, 250);
+    x.closePath(); x.fill();
+    x.strokeStyle = "rgba(214,238,192,.5)"; x.lineWidth = 3;
+    x.beginPath(); x.moveTo(128, 248); x.lineTo(128, 22); x.stroke();
+    x.lineWidth = 1.4; x.strokeStyle = "rgba(214,238,192,.28)";
+    for (let y = 44; y < 240; y += 22) {
+      x.beginPath(); x.moveTo(128, y); x.quadraticCurveTo(88, y + 8, 52, y + 30);
+      x.moveTo(128, y); x.quadraticCurveTo(168, y + 8, 204, y + 30); x.stroke();
+    }
+    const hg = x.createLinearGradient(60, 40, 130, 130);
+    hg.addColorStop(0, "rgba(255,255,255,.2)"); hg.addColorStop(1, "rgba(255,255,255,0)");
+    x.fillStyle = hg;
+    x.beginPath(); x.ellipse(102, 86, 42, 68, -0.5, 0, 7); x.fill();
+  });
+  /* snake plant: upright sword with dark banding and gold margins */
+  TEX.leafSnake = leafCanvas((x) => {
+    const g = x.createLinearGradient(0, 256, 0, 0);
+    g.addColorStop(0, "#27541f"); g.addColorStop(1, "#69aa46");
+    x.fillStyle = g;
+    x.beginPath();
+    x.moveTo(106, 254); x.bezierCurveTo(90, 170, 100, 90, 126, 8);
+    x.bezierCurveTo(152, 90, 160, 170, 150, 254);
+    x.closePath(); x.fill();
+    x.strokeStyle = "rgba(18,46,16,.42)";
+    for (let y = 22; y < 250; y += 9) {
+      x.lineWidth = 2 + Math.random() * 3;
+      x.beginPath(); x.moveTo(96 + Math.random() * 12, y);
+      x.bezierCurveTo(118, y + 5, 138, y - 5, 158 - Math.random() * 12, y);
+      x.stroke();
+    }
+    x.strokeStyle = "rgba(214,192,84,.8)"; x.lineWidth = 3;
+    x.beginPath(); x.moveTo(106, 252); x.bezierCurveTo(90, 170, 100, 90, 126, 10); x.stroke();
+    x.beginPath(); x.moveTo(150, 252); x.bezierCurveTo(160, 170, 152, 90, 127, 10); x.stroke();
+  });
   /* ---- leafy bush clump (outdoor greenery) ---- */
   {
     const c = mkCanvas(256, 256), x = c.getContext("2d");
@@ -366,31 +468,50 @@ function buildTextures() {
     }
     TEX.bush = tex(c, null, true);
   }
-  /* ---- night sky for the room skylights + cool moon pool/shaft ---- */
+  /* ---- what the skylights show: IST daytime sky OR the night's stars ---- */
   {
     const c = mkCanvas(256, 256), x = c.getContext("2d");
-    const g = x.createLinearGradient(0, 0, 0, 256);
-    g.addColorStop(0, "#0a0f2c"); g.addColorStop(1, "#1c2350");
-    x.fillStyle = g; x.fillRect(0, 0, 256, 256);
-    for (let i = 0; i < 140; i++) {
-      x.fillStyle = `rgba(255,248,230,${0.25 + Math.random() * 0.75})`;
-      const r = Math.random() < 0.08 ? 1.8 : 0.9;
-      x.fillRect(Math.random() * 256, Math.random() * 256, r, r);
+    if (IS_DAY) {
+      const g = x.createLinearGradient(0, 0, 0, 256);
+      g.addColorStop(0, "#7fb8ea"); g.addColorStop(1, "#c9e2f7");
+      x.fillStyle = g; x.fillRect(0, 0, 256, 256);
+      const sg = x.createRadialGradient(186, 62, 5, 186, 62, 95);
+      sg.addColorStop(0, "rgba(255,252,232,.95)");
+      sg.addColorStop(0.35, "rgba(255,244,200,.5)");
+      sg.addColorStop(1, "rgba(255,244,200,0)");
+      x.fillStyle = sg; x.fillRect(0, 0, 256, 256);
+      for (let i = 0; i < 8; i++) {
+        const cx0 = Math.random() * 256, cy0 = 40 + Math.random() * 180, cw = 30 + Math.random() * 55;
+        const cg = x.createRadialGradient(cx0, cy0, 2, cx0, cy0, cw);
+        cg.addColorStop(0, "rgba(255,255,255,.5)"); cg.addColorStop(1, "rgba(255,255,255,0)");
+        x.save(); x.translate(cx0, cy0); x.scale(1, 0.45); x.translate(-cx0, -cy0);
+        x.fillStyle = cg; x.fillRect(0, 0, 256, 256); x.restore();
+      }
+    } else {
+      const g = x.createLinearGradient(0, 0, 0, 256);
+      g.addColorStop(0, "#0a0f2c"); g.addColorStop(1, "#1c2350");
+      x.fillStyle = g; x.fillRect(0, 0, 256, 256);
+      for (let i = 0; i < 140; i++) {
+        x.fillStyle = `rgba(255,248,230,${0.25 + Math.random() * 0.75})`;
+        const r = Math.random() < 0.08 ? 1.8 : 0.9;
+        x.fillRect(Math.random() * 256, Math.random() * 256, r, r);
+      }
     }
     TEX.stars = tex(c, null, true);
   }
   {
     const c = mkCanvas(256, 256), x = c.getContext("2d");
     const g = x.createRadialGradient(128, 128, 8, 128, 128, 126);
-    g.addColorStop(0, "rgba(150,180,255,.34)");
-    g.addColorStop(1, "rgba(150,180,255,0)");
+    g.addColorStop(0, `rgba(${RAY},${IS_DAY ? ".4" : ".34"})`);
+    g.addColorStop(1, `rgba(${RAY},0)`);
     x.fillStyle = g; x.fillRect(0, 0, 256, 256);
     TEX.bluePool = tex(c);
   }
   {
     const c = mkCanvas(64, 256), x = c.getContext("2d");
     const g = x.createLinearGradient(0, 0, 0, 256);
-    g.addColorStop(0, "rgba(150,180,255,.15)"); g.addColorStop(1, "rgba(150,180,255,0)");
+    g.addColorStop(0, `rgba(${RAY},${IS_DAY ? ".18" : ".15"})`);
+    g.addColorStop(1, `rgba(${RAY},0)`);
     x.fillStyle = g; x.fillRect(0, 0, 64, 256);
     TEX.shaftBlue = tex(c);
   }
@@ -474,9 +595,6 @@ function buildMaterials() {
     map: TEX.glowSprite, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true
   });
   /* greenery & skylight materials */
-  MAT.foliage = new THREE.MeshStandardMaterial({
-    map: TEX.frond, alphaTest: 0.4, side: THREE.DoubleSide, roughness: 1, envMapIntensity: 0.15
-  });
   MAT.bushM = new THREE.MeshStandardMaterial({
     map: TEX.bush, alphaTest: 0.4, side: THREE.DoubleSide, roughness: 1, envMapIntensity: 0.12
   });
@@ -642,30 +760,105 @@ function dustField(w, d, h, n) {
   return pts;
 }
 
-/* a potted areca palm — three crossed frond planes in a clay pot */
-function pottedPlant(s) {
-  s = s || 1;
-  const g = new THREE.Group();
-  const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.17 * s, 0.12 * s, 0.3 * s, 12), MAT.pot);
-  pot.position.y = 0.15 * s; pot.castShadow = true;
-  const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.185 * s, 0.175 * s, 0.05 * s, 12), MAT.pot);
-  rim.position.y = 0.3 * s;
-  const soil = new THREE.Mesh(new THREE.CircleGeometry(0.15 * s, 10),
-    new THREE.MeshStandardMaterial({ color: 0x2a1a10, roughness: 1 }));
-  soil.rotation.x = -Math.PI / 2; soil.position.y = 0.305 * s;
-  g.add(pot, rim, soil);
-  const fh = (1.05 + Math.random() * 0.35) * s;
-  for (let i = 0; i < 3; i++) {
-    const pl = new THREE.Mesh(new THREE.PlaneGeometry(fh * 0.95, fh), MAT.foliage);
-    pl.position.y = 0.28 * s + fh / 2;
-    pl.rotation.y = i * Math.PI / 3 + Math.random() * 0.4;
-    g.add(pl);
+/* ── realistic potted plants: five species, leaf-by-leaf ── */
+const leafMats = {};
+function leafMaterial(t) {
+  if (!leafMats[t.uuid]) {
+    leafMats[t.uuid] = new THREE.MeshStandardMaterial({
+      map: t, alphaTest: 0.45, side: THREE.DoubleSide, roughness: 0.72, envMapIntensity: 0.25
+    });
   }
-  const sh = new THREE.Mesh(new THREE.PlaneGeometry(1.05 * s, 1.05 * s), MAT.shadowDecal);
+  return leafMats[t.uuid];
+}
+/* a single leaf plane pivoted at its base, so it can lean from the stem */
+function leaf(t, w, h, yaw, tilt, y) {
+  const geo = new THREE.PlaneGeometry(w, h);
+  geo.translate(0, h / 2, 0);
+  const m = new THREE.Mesh(geo, leafMaterial(t));
+  m.rotation.order = "YXZ";
+  m.rotation.y = yaw;
+  m.rotation.x = tilt;
+  m.position.y = y;
+  return m;
+}
+function potBase(s) {
+  const g = new THREE.Group();
+  const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.18 * s, 0.13 * s, 0.32 * s, 12), MAT.pot);
+  pot.position.y = 0.16 * s; pot.castShadow = true;
+  const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.195 * s, 0.185 * s, 0.05 * s, 12), MAT.pot);
+  rim.position.y = 0.32 * s;
+  const soil = new THREE.Mesh(new THREE.CircleGeometry(0.16 * s, 10),
+    new THREE.MeshStandardMaterial({ color: 0x2a1a10, roughness: 1 }));
+  soil.rotation.x = -Math.PI / 2; soil.position.y = 0.325 * s;
+  const sh = new THREE.Mesh(new THREE.PlaneGeometry(1.15 * s, 1.15 * s), MAT.shadowDecal);
   sh.rotation.x = -Math.PI / 2; sh.position.y = 0.012;
-  g.add(sh);
+  g.add(pot, rim, soil, sh);
   return g;
 }
+function plantMonstera(s) {
+  const g = potBase(s);
+  const n = 7;
+  for (let i = 0; i < n; i++) {
+    const sz = (0.5 + Math.random() * 0.22) * s;
+    const yaw = i * (Math.PI * 2 / n) + Math.random() * 0.5;
+    const tilt = -(0.55 + Math.random() * 0.5);
+    const y = (0.34 + Math.random() * 0.5) * s;
+    const st = new THREE.Mesh(new THREE.CylinderGeometry(0.008 * s, 0.011 * s, y, 5),
+      new THREE.MeshStandardMaterial({ color: 0x2a5226, roughness: 0.9 }));
+    st.position.y = y / 2;
+    st.rotation.z = (Math.random() - 0.5) * 0.25;
+    g.add(st);
+    g.add(leaf(TEX.leafMonstera, sz, sz, yaw, tilt, y));
+  }
+  return g;
+}
+function plantBanana(s) {
+  const g = potBase(s);
+  for (let i = 0; i < 5; i++) {
+    const h = (1.15 + Math.random() * 0.55) * s;
+    g.add(leaf(TEX.leafBanana, h * 0.34, h, i * 1.256 + Math.random() * 0.5,
+      -(0.18 + Math.random() * 0.4), 0.3 * s));
+  }
+  return g;
+}
+function plantPalm(s) {
+  const g = potBase(s);
+  for (let i = 0; i < 6; i++) {
+    const h = (1.1 + Math.random() * 0.5) * s;
+    g.add(leaf(TEX.leafPalm, h * 0.45, h, i * 1.047 + Math.random() * 0.4,
+      -(0.15 + Math.random() * 0.45), 0.3 * s));
+  }
+  return g;
+}
+function plantFig(s) {
+  const g = potBase(s);
+  const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.016 * s, 0.024 * s, 1.35 * s, 6),
+    new THREE.MeshStandardMaterial({ color: 0x5a4128, roughness: 0.95 }));
+  trunk.position.y = 0.3 * s + 0.675 * s;
+  g.add(trunk);
+  for (let i = 0; i < 10; i++) {
+    const f = i / 9;
+    const sz = (0.3 + (1 - f) * 0.14) * s;
+    g.add(leaf(TEX.leafFig, sz * 0.8, sz, i * 2.4 + Math.random() * 0.4,
+      -(0.5 + Math.random() * 0.35), (0.55 + f * 1.05) * s));
+  }
+  return g;
+}
+function plantSnake(s) {
+  const g = potBase(s);
+  for (let i = 0; i < 10; i++) {
+    const h = (0.75 + Math.random() * 0.5) * s;
+    const m = leaf(TEX.leafSnake, h * 0.2, h, Math.random() * Math.PI * 2,
+      -(0.04 + Math.random() * 0.16), 0.3 * s);
+    m.position.x = (Math.random() - 0.5) * 0.14 * s;
+    m.position.z = (Math.random() - 0.5) * 0.14 * s;
+    g.add(m);
+  }
+  return g;
+}
+const PLANT_KINDS = [plantMonstera, plantBanana, plantPalm, plantFig, plantSnake];
+/* the exterior keeps its potted palms */
+function pottedPlant(s) { return plantPalm(s || 1); }
 
 /* a garden bush — crossed cut-out planes */
 function gardenBush(w, h) {
@@ -706,7 +899,7 @@ function skylightUnit(w, d) {
   const pool = new THREE.Mesh(new THREE.PlaneGeometry(w * 1.7, d * 1.7), MAT.bluePool);
   pool.rotation.x = -Math.PI / 2; pool.position.y = -WALL_H + 0.018;
   g.add(pool);
-  const l = new THREE.SpotLight(0xa9bce8, 0.4, 16, 0.75, 0.85, 1.7);
+  const l = new THREE.SpotLight(IS_DAY ? 0xffe0b0 : 0xa9bce8, IS_DAY ? 0.55 : 0.4, 16, 0.75, 0.85, 1.7);
   l.position.set(0, 0.4, 0);
   l.target.position.set(0, -WALL_H, 0);
   g.add(l, l.target);
@@ -1240,9 +1433,9 @@ function buildHub() {
   const ceil = new THREE.Mesh(new THREE.ShapeGeometry(shape, 24), MAT.ceil);
   ceil.rotation.x = Math.PI / 2; ceil.position.y = WALL_H;
   g.add(ceil);
-  /* sky glow above the opening */
+  /* sky above the opening follows IST: bright day or deep night */
   const skyP = new THREE.Mesh(new THREE.PlaneGeometry(HS * 2.4, HS * 2.4),
-    new THREE.MeshBasicMaterial({ color: 0x4a5f9e }));
+    new THREE.MeshBasicMaterial({ map: TEX.stars }));
   skyP.rotation.x = Math.PI / 2; skyP.position.y = WALL_H + 0.9;
   g.add(skyP);
   /* skylight curb */
@@ -1256,7 +1449,7 @@ function buildHub() {
   const shaftTex = (() => {
     const c = mkCanvas(64, 256), x = c.getContext("2d");
     const gg = x.createLinearGradient(0, 0, 0, 256);
-    gg.addColorStop(0, "rgba(150,180,255,.18)"); gg.addColorStop(1, "rgba(150,180,255,0)");
+    gg.addColorStop(0, `rgba(${RAY},.18)`); gg.addColorStop(1, `rgba(${RAY},0)`);
     x.fillStyle = gg; x.fillRect(0, 0, 64, 256);
     return tex(c);
   })();
@@ -1310,7 +1503,7 @@ function buildHub() {
   g.add(lampG);
 
   /* lights */
-  const skyLight = new THREE.SpotLight(0x9fb4e8, 0.9, 26, 0.62, 0.9, 1.4);
+  const skyLight = new THREE.SpotLight(IS_DAY ? 0xfff0d2 : 0x9fb4e8, IS_DAY ? 1.0 : 0.9, 26, 0.62, 0.9, 1.4);
   skyLight.position.set(0, WALL_H + 1.6, 0);
   skyLight.target.position.set(0, 0, 0);
   skyLight.castShadow = true;
@@ -1468,10 +1661,12 @@ function buildRoom(key, idx) {
     g.add(psh);
   });
 
-  /* potted palms in every corner */
+  /* a different pair of plant species for every room, one per corner */
+  const mkA = PLANT_KINDS[idx % PLANT_KINDS.length];
+  const mkB = PLANT_KINDS[(idx + 2) % PLANT_KINDS.length];
   [[-W / 2 + 1.35, -D / 2 + 1.35], [W / 2 - 1.35, -D / 2 + 1.35],
-   [-W / 2 + 1.35, D / 2 - 1.35], [W / 2 - 1.35, D / 2 - 1.35]].forEach((c2) => {
-    const pl = pottedPlant(1.15 + Math.random() * 0.35);
+   [-W / 2 + 1.35, D / 2 - 1.35], [W / 2 - 1.35, D / 2 - 1.35]].forEach((c2, ci) => {
+    const pl = (ci % 2 ? mkB : mkA)(1.15 + Math.random() * 0.35);
     pl.position.set(c2[0], 0, c2[1]);
     pl.rotation.y = Math.random() * Math.PI * 2;
     g.add(pl);

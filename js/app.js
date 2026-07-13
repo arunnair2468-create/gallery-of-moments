@@ -328,6 +328,72 @@ function buildTextures() {
     x.beginPath(); x.arc(130, 150, 7, 0, 7); x.fill();
     TEX.palm = tex(c, null, true);
   }
+  /* ---- palm frond (potted plants) ---- */
+  {
+    const c = mkCanvas(256, 256), x = c.getContext("2d");
+    x.lineCap = "round";
+    for (let i = 0; i < 13; i++) {
+      const a = -Math.PI / 2 + (i / 12 - 0.5) * 2.6;
+      const L = 100 + Math.random() * 60;
+      const dx = Math.cos(a), dy = Math.sin(a);
+      const g0 = Math.random() * 60;
+      x.strokeStyle = `rgb(${26 + g0 * 0.5 | 0},${72 + g0 | 0},${30 + g0 * 0.5 | 0})`;
+      x.lineWidth = 2;
+      x.beginPath(); x.moveTo(128, 246); x.lineTo(128 + dx * L, 246 + dy * L); x.stroke();
+      x.lineWidth = 1.4;
+      for (let f = 0.25; f < 1; f += 0.06) {
+        const px2 = 128 + dx * L * f, py2 = 246 + dy * L * f;
+        const ll = 15 * (1.15 - f);
+        x.beginPath();
+        x.moveTo(px2, py2); x.lineTo(px2 - dy * ll + dx * 6, py2 + dx * ll + dy * 6);
+        x.moveTo(px2, py2); x.lineTo(px2 + dy * ll + dx * 6, py2 - dx * ll + dy * 6);
+        x.stroke();
+      }
+    }
+    TEX.frond = tex(c, null, true);
+  }
+  /* ---- leafy bush clump (outdoor greenery) ---- */
+  {
+    const c = mkCanvas(256, 256), x = c.getContext("2d");
+    for (let i = 0; i < 380; i++) {
+      const px2 = 24 + Math.random() * 208;
+      const py2 = 256 - Math.pow(Math.random(), 1.6) * 210;
+      const r = 4 + Math.random() * 9;
+      const d = (256 - py2) / 220;
+      const g0 = 30 + Math.random() * 42 + d * 26;
+      x.fillStyle = `rgba(${g0 * 0.42 | 0},${g0 + 16 | 0},${g0 * 0.45 | 0},.92)`;
+      x.beginPath(); x.ellipse(px2, py2, r, r * 0.72, Math.random() * 3, 0, 7); x.fill();
+    }
+    TEX.bush = tex(c, null, true);
+  }
+  /* ---- night sky for the room skylights + cool moon pool/shaft ---- */
+  {
+    const c = mkCanvas(256, 256), x = c.getContext("2d");
+    const g = x.createLinearGradient(0, 0, 0, 256);
+    g.addColorStop(0, "#0a0f2c"); g.addColorStop(1, "#1c2350");
+    x.fillStyle = g; x.fillRect(0, 0, 256, 256);
+    for (let i = 0; i < 140; i++) {
+      x.fillStyle = `rgba(255,248,230,${0.25 + Math.random() * 0.75})`;
+      const r = Math.random() < 0.08 ? 1.8 : 0.9;
+      x.fillRect(Math.random() * 256, Math.random() * 256, r, r);
+    }
+    TEX.stars = tex(c, null, true);
+  }
+  {
+    const c = mkCanvas(256, 256), x = c.getContext("2d");
+    const g = x.createRadialGradient(128, 128, 8, 128, 128, 126);
+    g.addColorStop(0, "rgba(150,180,255,.34)");
+    g.addColorStop(1, "rgba(150,180,255,0)");
+    x.fillStyle = g; x.fillRect(0, 0, 256, 256);
+    TEX.bluePool = tex(c);
+  }
+  {
+    const c = mkCanvas(64, 256), x = c.getContext("2d");
+    const g = x.createLinearGradient(0, 0, 0, 256);
+    g.addColorStop(0, "rgba(150,180,255,.15)"); g.addColorStop(1, "rgba(150,180,255,0)");
+    x.fillStyle = g; x.fillRect(0, 0, 64, 256);
+    TEX.shaftBlue = tex(c);
+  }
   /* film grain for the CSS layer */
   {
     const c = mkCanvas(160, 160), x = c.getContext("2d");
@@ -406,6 +472,24 @@ function buildMaterials() {
   });
   MAT.glow = new THREE.SpriteMaterial({
     map: TEX.glowSprite, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true
+  });
+  /* greenery & skylight materials */
+  MAT.foliage = new THREE.MeshStandardMaterial({
+    map: TEX.frond, alphaTest: 0.4, side: THREE.DoubleSide, roughness: 1, envMapIntensity: 0.15
+  });
+  MAT.bushM = new THREE.MeshStandardMaterial({
+    map: TEX.bush, alphaTest: 0.4, side: THREE.DoubleSide, roughness: 1, envMapIntensity: 0.12
+  });
+  MAT.pot = new THREE.MeshStandardMaterial({
+    map: TEX.plaster.map, color: 0x9a5230, roughness: 0.9, envMapIntensity: 0.25,
+    normalMap: TEX.plaster.normalMap, normalScale: new THREE.Vector2(0.6, 0.6)
+  });
+  MAT.starSky = new THREE.MeshBasicMaterial({ map: TEX.stars });
+  MAT.bluePool = new THREE.MeshBasicMaterial({
+    map: TEX.bluePool, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0.5
+  });
+  MAT.shaftBlue = new THREE.MeshBasicMaterial({
+    map: TEX.shaftBlue, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide
   });
 }
 
@@ -558,6 +642,77 @@ function dustField(w, d, h, n) {
   return pts;
 }
 
+/* a potted areca palm — three crossed frond planes in a clay pot */
+function pottedPlant(s) {
+  s = s || 1;
+  const g = new THREE.Group();
+  const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.17 * s, 0.12 * s, 0.3 * s, 12), MAT.pot);
+  pot.position.y = 0.15 * s; pot.castShadow = true;
+  const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.185 * s, 0.175 * s, 0.05 * s, 12), MAT.pot);
+  rim.position.y = 0.3 * s;
+  const soil = new THREE.Mesh(new THREE.CircleGeometry(0.15 * s, 10),
+    new THREE.MeshStandardMaterial({ color: 0x2a1a10, roughness: 1 }));
+  soil.rotation.x = -Math.PI / 2; soil.position.y = 0.305 * s;
+  g.add(pot, rim, soil);
+  const fh = (1.05 + Math.random() * 0.35) * s;
+  for (let i = 0; i < 3; i++) {
+    const pl = new THREE.Mesh(new THREE.PlaneGeometry(fh * 0.95, fh), MAT.foliage);
+    pl.position.y = 0.28 * s + fh / 2;
+    pl.rotation.y = i * Math.PI / 3 + Math.random() * 0.4;
+    g.add(pl);
+  }
+  const sh = new THREE.Mesh(new THREE.PlaneGeometry(1.05 * s, 1.05 * s), MAT.shadowDecal);
+  sh.rotation.x = -Math.PI / 2; sh.position.y = 0.012;
+  g.add(sh);
+  return g;
+}
+
+/* a garden bush — crossed cut-out planes */
+function gardenBush(w, h) {
+  const g = new THREE.Group();
+  for (let i = 0; i < 2; i++) {
+    const p = new THREE.Mesh(new THREE.PlaneGeometry(w, h), MAT.bushM);
+    p.position.y = h / 2 - 0.03;
+    p.rotation.y = i * Math.PI / 2 + Math.random() * 0.5;
+    g.add(p);
+  }
+  return g;
+}
+
+/* a slatted ceiling opening showing the night sky, with a moonlight shaft */
+function skylightUnit(w, d) {
+  const g = new THREE.Group();
+  const sky = new THREE.Mesh(new THREE.PlaneGeometry(w, d), MAT.starSky);
+  sky.rotation.x = Math.PI / 2;
+  sky.position.y = -0.015;
+  g.add(sky);
+  const c1 = box(w + 0.24, 0.2, 0.12, MAT.wood); c1.position.set(0, -0.1, -d / 2 - 0.06);
+  const c2 = c1.clone(); c2.position.z = d / 2 + 0.06;
+  const c3 = box(0.12, 0.2, d + 0.24, MAT.wood); c3.position.set(-w / 2 - 0.06, -0.1, 0);
+  const c4 = c3.clone(); c4.position.x = w / 2 + 0.06;
+  g.add(c1, c2, c3, c4);
+  const n = Math.max(2, Math.round(w / 0.65));
+  for (let i = 1; i < n; i++) {
+    const s = box(0.055, 0.07, d, MAT.wood);
+    s.position.set(-w / 2 + i * w / n, -0.05, 0);
+    g.add(s);
+  }
+  const shaft = new THREE.Mesh(
+    new THREE.CylinderGeometry(Math.min(w, d) * 0.42, Math.min(w, d) * 0.62, WALL_H, 4, 1, true),
+    MAT.shaftBlue
+  );
+  shaft.position.y = -WALL_H / 2; shaft.rotation.y = Math.PI / 4;
+  g.add(shaft);
+  const pool = new THREE.Mesh(new THREE.PlaneGeometry(w * 1.7, d * 1.7), MAT.bluePool);
+  pool.rotation.x = -Math.PI / 2; pool.position.y = -WALL_H + 0.018;
+  g.add(pool);
+  const l = new THREE.SpotLight(0xa9bce8, 0.4, 16, 0.75, 0.85, 1.7);
+  l.position.set(0, 0.4, 0);
+  l.target.position.set(0, -WALL_H, 0);
+  g.add(l, l.target);
+  return g;
+}
+
 function makeDoorway(targetKey, dw, dh, label, tag) {
   const g = new THREE.Group();
   /* jambs & lintels sit proud of both wall faces (wall is ±0.18) — nothing coplanar */
@@ -651,6 +806,32 @@ function buildExterior() {
   const path = new THREE.Mesh(new THREE.PlaneGeometry(2.7, 18), pathMat);
   path.rotation.x = -Math.PI / 2; path.position.set(0, 0.012, 9);
   S.add(path);
+
+  /* ---- greenery around the house ---- */
+  const green = new THREE.Group();
+  /* hedge hugging the facade, kept clear of the door */
+  for (let hx = -7.6; hx <= 7.6; hx += 1.9) {
+    if (Math.abs(hx) < 2.6) continue;
+    const b = gardenBush(2.1 + Math.random() * 0.7, 0.85 + Math.random() * 0.4);
+    b.position.set(hx + (Math.random() - 0.5) * 0.5, 0, 1.1 + Math.random() * 0.4);
+    green.add(b);
+  }
+  /* loose shrubs across the yard */
+  for (let i = 0; i < 12; i++) {
+    const side = i % 2 ? 1 : -1;
+    const b = gardenBush(1.6 + Math.random() * 1.6, 1.0 + Math.random() * 0.9);
+    b.position.set(side * (4.2 + Math.random() * 7), 0, 4 + Math.random() * 12);
+    green.add(b);
+  }
+  /* tall palms in clay pots along the walls and flanking the steps */
+  [[-7.9, 2.2, 1.5], [7.9, 2.2, 1.5], [-5.9, 1.6, 1.3], [5.9, 1.6, 1.3],
+   [-2.35, 2.75, 1.0], [2.35, 2.75, 1.0]].forEach((p) => {
+    const pl = pottedPlant(p[2]);
+    pl.position.set(p[0], 0, p[1]);
+    pl.rotation.y = Math.random() * Math.PI * 2;
+    green.add(pl);
+  });
+  S.add(green);
 
   /* ---- the house ---- */
   const H = new THREE.Group();
@@ -1285,6 +1466,22 @@ function buildRoom(key, idx) {
     const psh = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 1.1), MAT.shadowDecal);
     psh.rotation.x = -Math.PI / 2; psh.position.set(c[0], 0.013, c[1]);
     g.add(psh);
+  });
+
+  /* potted palms in every corner */
+  [[-W / 2 + 1.35, -D / 2 + 1.35], [W / 2 - 1.35, -D / 2 + 1.35],
+   [-W / 2 + 1.35, D / 2 - 1.35], [W / 2 - 1.35, D / 2 - 1.35]].forEach((c2) => {
+    const pl = pottedPlant(1.15 + Math.random() * 0.35);
+    pl.position.set(c2[0], 0, c2[1]);
+    pl.rotation.y = Math.random() * Math.PI * 2;
+    g.add(pl);
+  });
+
+  /* slatted skylights let the stars in */
+  [-W / 4, W / 4].forEach((sx) => {
+    const sk = skylightUnit(2.7, 1.8);
+    sk.position.set(sx, WALL_H, 0);
+    g.add(sk);
   });
 
   /* room title on the far (south) wall */

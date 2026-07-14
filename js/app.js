@@ -1354,61 +1354,6 @@ function makeFramedPhoto(roomKey, it, x, cy, z, rotY) {
   return grp;
 }
 
-/* ── small framed prints hanging from the hall ceiling, stirring gently ── */
-const HANGING = [];
-function buildHangingPhotos(g) {
-  const picks = PHOTOS.slice().sort(() => Math.random() - 0.5).slice(0, 16);
-  const spots = [];
-  let guard = 0;
-  while (spots.length < picks.length && guard++ < 500) {
-    const a = Math.random() * Math.PI * 2;
-    const r = 3.4 + Math.random() * 4.1;
-    const x = Math.sin(a) * r, z = -Math.cos(a) * r;
-    if (spots.some((s) => Math.hypot(s[0] - x, s[1] - z) < 1.5)) continue;
-    spots.push([x, z]);
-  }
-  let pending = 0;
-  picks.forEach((p, i) => {
-    if (!spots[i]) return;
-    let w = 0.34 + Math.random() * 0.3;      /* small frames only */
-    let h = w / p.r;
-    if (h > 0.85) { h = 0.85; w = h * p.r; }
-    const drop = 0.7 + Math.random() * 0.8;  /* a few feet below the ceiling */
-    const anchor = new THREE.Group();
-    anchor.position.set(spots[i][0], WALL_H, spots[i][1]);
-    const wire = new THREE.Mesh(new THREE.CylinderGeometry(0.0045, 0.0045, drop, 4), MAT.brass);
-    wire.position.y = -drop / 2;
-    anchor.add(wire);
-    const fg = new THREE.Group();
-    fg.position.y = -drop - h / 2 - 0.04;
-    const frame = box(w + 0.07, h + 0.07, 0.028, MAT.wood);
-    const pm = new THREE.MeshBasicMaterial({ color: 0x1a1512 });
-    const front = new THREE.Mesh(new THREE.PlaneGeometry(w, h), pm);
-    front.position.z = 0.016;
-    front.userData = { type: "photo", def: p, w, h };
-    const back = new THREE.Mesh(new THREE.PlaneGeometry(w, h), pm);
-    back.rotation.y = Math.PI; back.position.z = -0.016;
-    back.userData = { type: "photo", def: p, w, h };
-    fg.add(frame, front, back);
-    const baseY = Math.random() * Math.PI * 2;
-    fg.rotation.y = baseY;
-    anchor.add(fg);
-    g.add(anchor);
-    pending++;
-    texLoader.load("assets/thumb/" + p.id + ".jpg", (tx) => {
-      tx.encoding = THREE.sRGBEncoding;
-      tx.anisotropy = 4;
-      pm.map = tx; pm.color.set(0xffffff); pm.needsUpdate = true;
-      if (--pending === 0) setTimeout(() => capturePortal("hub"), 120);
-    }, undefined, () => { pending--; });
-    HANGING.push({
-      anchor, fg, baseY,
-      f1: 0.22 + Math.random() * 0.2, f2: 0.11 + Math.random() * 0.14,
-      p1: Math.random() * 9, p2: Math.random() * 9,
-      amp: 0.018 + Math.random() * 0.03
-    });
-  });
-}
 
 function buildHub() {
   const R = 10.4, AP = R * Math.cos(Math.PI / 8), SIDE = 2 * R * Math.sin(Math.PI / 8);
@@ -1540,7 +1485,6 @@ function buildHub() {
     g.add(st);
   }
 
-  buildHangingPhotos(g);
   g.add(dustField(R * 1.5, R * 1.5, WALL_H, 200));
   sceneInt.add(g);
   g.visible = false;
@@ -2171,14 +2115,6 @@ function loop(now) {
         o.scale.x = 1 + Math.sin(now * 0.017 + o.id) * 0.1;
       }
     });
-  }
-  /* the hanging frames sway and twirl in an imperceptible breeze */
-  if (mode === "int" && current && current.key === "hub") {
-    for (const hg of HANGING) {
-      hg.anchor.rotation.x = Math.sin(t * hg.f1 + hg.p1) * hg.amp;
-      hg.anchor.rotation.z = Math.sin(t * hg.f2 + hg.p2) * hg.amp * 1.35;
-      hg.fg.rotation.y = hg.baseY + Math.sin(t * 0.16 + hg.p2) * 0.55;
-    }
   }
 
   if (mode === "ext" && EXT.fireflies) {
